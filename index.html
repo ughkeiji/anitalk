@@ -3,8 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>anitwt</title>
-  <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
+  <title>anitwt — random anime chat</title>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700;800&family=Lora:ital,wght@0,400;0,500;1,400;1,500&family=JetBrains+Mono:wght@300;400&display=swap" rel="stylesheet" />
@@ -39,11 +38,9 @@
     ::-webkit-scrollbar-track { background: var(--bg); }
     ::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 2px; }
 
-    /* ── screens ── */
     .screen { display: none; }
     .screen.active { display: flex; }
 
-    /* ── bg grid ── */
     .bg-grid {
       position: fixed; inset: 0;
       background-image:
@@ -54,7 +51,7 @@
       -webkit-mask-image: radial-gradient(ellipse 80% 80% at 50% 50%, black 40%, transparent 100%);
     }
 
-    /* ══════════════════ HOME ══════════════════ */
+    /* ── HOME ── */
     #home { min-height: 100vh; flex-direction: column; position: relative; overflow: hidden; }
 
     .site-header {
@@ -161,7 +158,7 @@
     .cancel-btn:hover { border-color: var(--border2); color: var(--text2); }
     .footer-note { font-family: var(--fm); font-size: .65rem; color: var(--muted); letter-spacing: .04em; }
 
-    /* ══════════════════ CHAT ══════════════════ */
+    /* ── CHAT ── */
     #chat { height: 100vh; flex-direction: column; max-width: 680px; margin: 0 auto; width: 100%; }
 
     .chat-header {
@@ -202,13 +199,13 @@
     .ts { font-family: var(--fm); font-size: .55rem; color: var(--muted); padding: 0 .2rem; }
     .msg-row.me .ts { text-align: right; }
 
-    .typing-bubble { display: flex; align-items: center; gap: 4px; }
+    .typing-bubble { display: flex; align-items: center; gap: 4px; padding: .2rem 0; }
     .dot { width: 5px; height: 5px; border-radius: 50%; background: var(--muted); display: inline-block; animation: typingBounce 1.2s ease-in-out infinite; }
     .dot:nth-child(2) { animation-delay: .2s; }
     .dot:nth-child(3) { animation-delay: .4s; }
     @keyframes typingBounce { 0%,60%,100%{transform:translateY(0)} 30%{transform:translateY(-4px)} }
 
-    .disconnect-notice { font-family: var(--fm); font-size: .65rem; letter-spacing: .08em; color: var(--muted); text-align: center; padding: 1rem 0; animation: fadeIn .4s ease; }
+    .notice { font-family: var(--fm); font-size: .65rem; letter-spacing: .08em; color: var(--muted); text-align: center; padding: 1rem 0; animation: fadeIn .4s ease; }
     @keyframes fadeIn { from{opacity:0} to{opacity:1} }
 
     .input-bar { display: flex; gap: .75rem; border-top: 1px solid var(--border); padding: 1rem 1.5rem; align-items: center; flex-shrink: 0; }
@@ -226,359 +223,464 @@
     }
     .send-btn:hover:not(:disabled) { background: #f0d48a; }
     .send-btn:disabled { opacity: .3; cursor: not-allowed; }
+
+    /* ── NEW CHAT ── */
+    .new-chat-btn {
+      width: 100%; background: none; border: 1px dashed var(--border2); border-radius: var(--rs);
+      color: var(--muted); font-family: var(--fm); font-size: .7rem; letter-spacing: .06em;
+      padding: .6rem; cursor: pointer; transition: all .15s; margin-top: .5rem;
+    }
+    .new-chat-btn:hover { border-color: var(--accent); color: var(--accent); }
   </style>
 </head>
 <body>
 
-  <!-- ══════════════════ HOME SCREEN ══════════════════ -->
-  <div id="home" class="screen active">
-    <div class="bg-grid"></div>
-    <header class="site-header">
-      <div class="logo"><span class="logo-dot"></span>anitwt</div>
-      <div class="online-pill">
-        <span class="online-dot"></span>
-        <span id="online-count">--</span> online now
-      </div>
-    </header>
+<!-- HOME -->
+<div id="home" class="screen active">
+  <div class="bg-grid"></div>
+  <header class="site-header">
+    <div class="logo"><span class="logo-dot"></span>anitwt</div>
+    <div class="online-pill">
+      <span class="online-dot"></span>
+      <span id="online-count">--</span> online now
+    </div>
+  </header>
 
-    <main class="home-main">
-      <div class="hero">
-        <p class="hero-eyebrow">random anime chat · anonymous</p>
-        <h1 class="hero-title">meet someone<br><em>who gets it.</em></h1>
-        <p class="hero-sub">matched by anime taste, not algorithm</p>
-      </div>
+  <main class="home-main">
+    <div class="hero">
+      <p class="hero-eyebrow">random anime chat · anonymous</p>
+      <h1 class="hero-title">meet someone<br><em>who gets it.</em></h1>
+      <p class="hero-sub">matched by anime taste, powered by AI</p>
+    </div>
 
-      <div class="form-card">
-        <!-- age + language -->
-        <div class="form-row two-col">
-          <div class="field">
-            <label class="field-label">your age</label>
-            <input id="age-input" class="field-input" placeholder="e.g. 19" maxlength="2" inputmode="numeric" />
-          </div>
-          <div class="field">
-            <label class="field-label">language</label>
-            <div class="chip-group">
-              <button class="chip active" data-lang="eng">🇺🇸 ENG</button>
-              <button class="chip" data-lang="tag">🇵🇭 TAG</button>
-            </div>
-          </div>
-        </div>
-
-        <!-- anime -->
+    <div class="form-card">
+      <div class="form-row two-col">
         <div class="field">
-          <label class="field-label">your favorite anime</label>
-          <input id="anime-input" class="field-input" placeholder="aot, jjk, one piece, vinland saga..." />
-          <span class="field-hint">separate with commas — more = better matches</span>
+          <label class="field-label">your age</label>
+          <input id="age-input" class="field-input" placeholder="e.g. 19" maxlength="2" inputmode="numeric" />
         </div>
-
-        <!-- you are -->
         <div class="field">
-          <label class="field-label">you are</label>
-          <div class="gender-grid" id="gender-group">
-            <button class="gender-btn" data-value="m"><span class="gender-icon">♂</span><span class="gender-lbl">Male</span></button>
-            <button class="gender-btn" data-value="f"><span class="gender-icon">♀</span><span class="gender-lbl">Female</span></button>
-            <button class="gender-btn active" data-value="any"><span class="gender-icon">✦</span><span class="gender-lbl">Rather not say</span></button>
-          </div>
-        </div>
-
-        <!-- looking for -->
-        <div class="field">
-          <label class="field-label">looking to chat with</label>
-          <div class="gender-grid" id="pref-group">
-            <button class="gender-btn" data-value="m"><span class="gender-icon">♂</span><span class="gender-lbl">Guys</span></button>
-            <button class="gender-btn" data-value="f"><span class="gender-icon">♀</span><span class="gender-lbl">Girls</span></button>
-            <button class="gender-btn active" data-value="any"><span class="gender-icon">✦</span><span class="gender-lbl">Anyone</span></button>
-          </div>
-        </div>
-
-        <!-- start / searching -->
-        <button id="start-btn" class="start-btn" disabled>find someone →</button>
-        <div id="searching-state" class="searching-state" style="display:none;">
-          <div class="searching-bar"><div class="searching-fill"></div></div>
-          <div class="searching-row">
-            <span class="searching-label" id="searching-label">searching</span>
-            <button class="cancel-btn" id="cancel-btn">cancel</button>
+          <label class="field-label">language</label>
+          <div class="chip-group">
+            <button class="chip active" data-lang="eng">🇺🇸 ENG</button>
+            <button class="chip" data-lang="tag">🇵🇭 TAG</button>
           </div>
         </div>
       </div>
 
-      <p class="footer-note">🔒 anonymous · no account · no logs</p>
-    </main>
+      <div class="field">
+        <label class="field-label">your favorite anime</label>
+        <input id="anime-input" class="field-input" placeholder="aot, jjk, one piece, vinland saga..." />
+        <span class="field-hint">separate with commas — more = better matches</span>
+      </div>
+
+      <div class="field">
+        <label class="field-label">you are</label>
+        <div class="gender-grid" id="gender-group">
+          <button class="gender-btn" data-value="m"><span class="gender-icon">♂</span><span class="gender-lbl">Male</span></button>
+          <button class="gender-btn" data-value="f"><span class="gender-icon">♀</span><span class="gender-lbl">Female</span></button>
+          <button class="gender-btn active" data-value="any"><span class="gender-icon">✦</span><span class="gender-lbl">Rather not say</span></button>
+        </div>
+      </div>
+
+      <div class="field">
+        <label class="field-label">looking to chat with</label>
+        <div class="gender-grid" id="pref-group">
+          <button class="gender-btn" data-value="m"><span class="gender-icon">♂</span><span class="gender-lbl">Guys</span></button>
+          <button class="gender-btn" data-value="f"><span class="gender-icon">♀</span><span class="gender-lbl">Girls</span></button>
+          <button class="gender-btn active" data-value="any"><span class="gender-icon">✦</span><span class="gender-lbl">Anyone</span></button>
+        </div>
+      </div>
+
+      <button id="start-btn" class="start-btn" disabled>find someone →</button>
+      <div id="searching-state" class="searching-state" style="display:none;">
+        <div class="searching-bar"><div class="searching-fill"></div></div>
+        <div class="searching-row">
+          <span class="searching-label" id="searching-label">searching</span>
+          <button class="cancel-btn" id="cancel-btn">cancel</button>
+        </div>
+      </div>
+    </div>
+
+    <p class="footer-note">🔒 anonymous · no account · AI-powered chat partner</p>
+  </main>
+</div>
+
+<!-- CHAT -->
+<div id="chat" class="screen">
+  <div class="chat-header">
+    <div class="chat-header-left">
+      <span class="chat-logo">anitwt</span>
+      <div class="chat-match">
+        <div class="match-bar-wrap">
+          <div class="match-bar-fill" id="match-bar-fill" style="width:0%"></div>
+        </div>
+        <span class="match-label" id="match-label">matching...</span>
+      </div>
+    </div>
+    <button class="end-btn" id="end-btn">end chat ×</button>
   </div>
 
-  <!-- ══════════════════ CHAT SCREEN ══════════════════ -->
-  <div id="chat" class="screen">
-    <div class="chat-header">
-      <div class="chat-header-left">
-        <span class="chat-logo">anitwt</span>
-        <div class="chat-match">
-          <div class="match-bar-wrap">
-            <div class="match-bar-fill" id="match-bar-fill"></div>
-          </div>
-          <span class="match-label" id="match-label">0% anime match</span>
-        </div>
-      </div>
-      <button class="end-btn" id="end-btn">end chat ×</button>
-    </div>
+  <div class="feed" id="feed"></div>
 
-    <div class="feed" id="feed">
-      <div class="feed-empty" id="feed-empty">
-        <span class="feed-empty-title">Connected ✦</span>
-        <span class="feed-empty-sub" id="feed-empty-sub">Break the ice!</span>
-      </div>
-    </div>
-
-    <div class="input-bar">
-      <input class="chat-input" id="chat-input" placeholder="say something about anime..." />
-      <button class="send-btn" id="send-btn" disabled>↑</button>
-    </div>
+  <div class="input-bar">
+    <input class="chat-input" id="chat-input" placeholder="say something about anime..." disabled />
+    <button class="send-btn" id="send-btn" disabled>↑</button>
   </div>
+</div>
 
-  <script>
-    // ─── 🔴 CHANGE THIS to your server URL after deploying ───────────────────
-    const SERVER_URL = "http://localhost:5000";
-    // ─────────────────────────────────────────────────────────────────────────
+<script>
+  // ── state ──────────────────────────────────────────────
+  let language = "eng";
+  let gender   = "any";
+  let pref     = "any";
+  let userAnime   = [];
+  let userAge     = 0;
+  let chatHistory = [];
+  let isBusy      = false;
+  let matchPct    = 0;
+  let typingEl    = null;
+  let searchCancelled = false;
+  let dotsInterval = null;
 
-    const socket = io(SERVER_URL);
+  // ── online count (cosmetic) ────────────────────────────
+  document.getElementById("online-count").textContent =
+    (Math.floor(Math.random() * 80) + 20).toString();
 
-    // state
-    let language     = "eng";
-    let gender       = "any";
-    let pref         = "any";
-    let typingTimer  = null;
-    let dotsInterval = null;
-    let dotsCount    = 0;
-    let typingEl     = null;
-    let isDisconnected = false;
+  // ── helpers ────────────────────────────────────────────
+  function nowStr() {
+    const d = new Date();
+    return String(d.getHours()).padStart(2,"0") + ":" + String(d.getMinutes()).padStart(2,"0");
+  }
 
-    // online count (cosmetic)
-    document.getElementById("online-count").textContent =
-      Math.floor(Math.random() * 80) + 20;
+  function showScreen(id) {
+    document.querySelectorAll(".screen").forEach(s => s.classList.remove("active"));
+    document.getElementById(id).classList.add("active");
+  }
 
-    // ── helpers ──
-    function now() {
-      const d = new Date();
-      return String(d.getHours()).padStart(2,"0") + ":" + String(d.getMinutes()).padStart(2,"0");
-    }
+  function validateStart() {
+    const age   = document.getElementById("age-input").value.trim();
+    const anime = document.getElementById("anime-input").value.trim();
+    document.getElementById("start-btn").disabled = !age || !anime;
+  }
 
-    function showScreen(id) {
-      document.querySelectorAll(".screen").forEach(s => s.classList.remove("active"));
-      document.getElementById(id).classList.add("active");
-    }
+  // ── chips / toggles ────────────────────────────────────
+  document.querySelectorAll(".chip[data-lang]").forEach(btn => {
+    btn.addEventListener("click", () => {
+      document.querySelectorAll(".chip[data-lang]").forEach(b => b.classList.remove("active"));
+      btn.classList.add("active");
+      language = btn.dataset.lang;
+    });
+  });
 
-    function validateStart() {
-      const age   = document.getElementById("age-input").value.trim();
-      const anime = document.getElementById("anime-input").value.trim();
-      document.getElementById("start-btn").disabled = !age || !anime;
-    }
-
-    // ── language chips ──
-    document.querySelectorAll(".chip[data-lang]").forEach(btn => {
+  function setupToggleGroup(groupId, onChange) {
+    document.querySelectorAll(`#${groupId} .gender-btn`).forEach(btn => {
       btn.addEventListener("click", () => {
-        document.querySelectorAll(".chip[data-lang]").forEach(b => b.classList.remove("active"));
+        document.querySelectorAll(`#${groupId} .gender-btn`).forEach(b => b.classList.remove("active"));
         btn.classList.add("active");
-        language = btn.dataset.lang;
+        onChange(btn.dataset.value);
       });
     });
+  }
+  setupToggleGroup("gender-group", v => gender = v);
+  setupToggleGroup("pref-group",   v => pref   = v);
 
-    // ── gender / pref buttons ──
-    function setupToggleGroup(groupId, onChange) {
-      document.querySelectorAll(`#${groupId} .gender-btn`).forEach(btn => {
-        btn.addEventListener("click", () => {
-          document.querySelectorAll(`#${groupId} .gender-btn`).forEach(b => b.classList.remove("active"));
-          btn.classList.add("active");
-          onChange(btn.dataset.value);
-        });
+  document.getElementById("age-input").addEventListener("input", e => {
+    e.target.value = e.target.value.replace(/\D/g, "");
+    validateStart();
+  });
+  document.getElementById("anime-input").addEventListener("input", validateStart);
+
+  // ── START ──────────────────────────────────────────────
+  document.getElementById("start-btn").addEventListener("click", async () => {
+    const age   = document.getElementById("age-input").value.trim();
+    const anime = document.getElementById("anime-input").value.trim();
+    if (!age || !anime) return;
+
+    userAge   = Number(age);
+    userAnime = anime.toLowerCase().split(",").map(s => s.trim()).filter(Boolean);
+    searchCancelled = false;
+
+    document.getElementById("start-btn").style.display = "none";
+    document.getElementById("searching-state").style.display = "flex";
+
+    let dotsCount = 0;
+    dotsInterval = setInterval(() => {
+      dotsCount = (dotsCount + 1) % 4;
+      document.getElementById("searching-label").textContent = "searching" + ".".repeat(dotsCount);
+    }, 450);
+
+    // Show chat screen early, set up empty feed
+    resetFeed();
+    showScreen("chat");
+
+    // wait a bit for "dramatic effect"
+    await sleep(2200);
+    if (searchCancelled) return;
+
+    clearInterval(dotsInterval);
+    dotsInterval = null;
+
+    // Build the system prompt
+    const sysPrompt = buildSystemPrompt();
+
+    // Ask AI to introduce itself (first message)
+    const intro = await callClaude(sysPrompt, [], buildIntroPrompt(), true);
+    if (searchCancelled) return;
+
+    // Parse match % from intro JSON
+    let introText = intro;
+    try {
+      const parsed = JSON.parse(intro);
+      matchPct = Math.min(100, Math.max(0, parsed.match_pct || 0));
+      introText = parsed.message;
+      // extract stranger anime list for display
+      const strangerAnime = (parsed.stranger_anime || []).join(", ");
+      document.getElementById("match-label").textContent = matchPct + "% anime match";
+      document.getElementById("match-bar-fill").style.width = matchPct + "%";
+      // update feed empty sub if still showing
+      const sub = document.querySelector(".feed-empty-sub");
+      if (sub) sub.textContent = strangerAnime
+        ? `They watch: ${strangerAnime} — break the ice!`
+        : "Break the ice!";
+    } catch(e) {
+      document.getElementById("match-label").textContent = "? % match";
+    }
+
+    addMessage(introText, "stranger");
+    document.getElementById("chat-input").disabled = false;
+    enableSendIfHasText();
+  });
+
+  // ── CANCEL ──────────────────────────────────────────────
+  document.getElementById("cancel-btn").addEventListener("click", () => {
+    searchCancelled = true;
+    clearInterval(dotsInterval);
+    dotsInterval = null;
+    document.getElementById("start-btn").style.display = "block";
+    document.getElementById("searching-state").style.display = "none";
+    showScreen("home");
+  });
+
+  // ── END CHAT ────────────────────────────────────────────
+  document.getElementById("end-btn").addEventListener("click", () => {
+    goHome();
+  });
+
+  // ── SEND ────────────────────────────────────────────────
+  async function sendMessage() {
+    const input = document.getElementById("chat-input");
+    const text  = input.value.trim();
+    if (!text || isBusy) return;
+
+    addMessage(text, "me");
+    chatHistory.push({ role: "user", content: text });
+    input.value = "";
+    document.getElementById("send-btn").disabled = true;
+    isBusy = true;
+
+    showTyping();
+
+    const sysPrompt = buildSystemPrompt();
+    const reply = await callClaude(sysPrompt, chatHistory, null, false);
+
+    hideTyping();
+    isBusy = false;
+
+    if (reply) {
+      addMessage(reply, "stranger");
+      chatHistory.push({ role: "assistant", content: reply });
+    }
+
+    enableSendIfHasText();
+  }
+
+  document.getElementById("send-btn").addEventListener("click", sendMessage);
+  document.getElementById("chat-input").addEventListener("keydown", e => {
+    if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); sendMessage(); }
+  });
+  document.getElementById("chat-input").addEventListener("input", enableSendIfHasText);
+
+  function enableSendIfHasText() {
+    const v = document.getElementById("chat-input").value.trim();
+    document.getElementById("send-btn").disabled = !v || isBusy;
+  }
+
+  // ── ADD MESSAGE ──────────────────────────────────────────
+  function addMessage(text, sender) {
+    const feed  = document.getElementById("feed");
+    const empty = feed.querySelector(".feed-empty");
+    if (empty) empty.remove();
+    hideTyping();
+
+    const row = document.createElement("div");
+    row.className = "msg-row" + (sender === "me" ? " me" : "");
+
+    const avatar = document.createElement("div");
+    avatar.className = "avatar";
+    avatar.textContent = sender === "me" ? "me" : "?";
+
+    const col = document.createElement("div");
+    col.className = "bubble-col";
+
+    const bubble = document.createElement("div");
+    bubble.className = "bubble " + sender;
+    bubble.textContent = text;
+
+    const ts = document.createElement("span");
+    ts.className = "ts";
+    ts.textContent = nowStr();
+
+    col.appendChild(bubble);
+    col.appendChild(ts);
+    row.appendChild(avatar);
+    row.appendChild(col);
+    feed.appendChild(row);
+    feed.scrollTop = feed.scrollHeight;
+  }
+
+  function addNotice(text) {
+    const feed = document.getElementById("feed");
+    const el = document.createElement("div");
+    el.className = "notice";
+    el.textContent = text;
+    feed.appendChild(el);
+    feed.scrollTop = feed.scrollHeight;
+
+    // new chat button
+    const btn = document.createElement("button");
+    btn.className = "new-chat-btn";
+    btn.textContent = "+ find a new match";
+    btn.addEventListener("click", goHome);
+    feed.appendChild(btn);
+    feed.scrollTop = feed.scrollHeight;
+  }
+
+  // ── TYPING INDICATOR ────────────────────────────────────
+  function showTyping() {
+    if (typingEl) return;
+    const feed = document.getElementById("feed");
+    typingEl = document.createElement("div");
+    typingEl.className = "msg-row";
+    const avatar = document.createElement("div");
+    avatar.className = "avatar";
+    avatar.textContent = "?";
+    const bubble = document.createElement("div");
+    bubble.className = "bubble stranger typing-bubble";
+    bubble.innerHTML = '<span class="dot"></span><span class="dot"></span><span class="dot"></span>';
+    typingEl.appendChild(avatar);
+    typingEl.appendChild(bubble);
+    feed.appendChild(typingEl);
+    feed.scrollTop = feed.scrollHeight;
+  }
+
+  function hideTyping() {
+    if (typingEl) { typingEl.remove(); typingEl = null; }
+  }
+
+  // ── RESET / GO HOME ─────────────────────────────────────
+  function resetFeed() {
+    chatHistory = [];
+    isBusy = false;
+    matchPct = 0;
+    const feed = document.getElementById("feed");
+    feed.innerHTML = "";
+    const empty = document.createElement("div");
+    empty.className = "feed-empty";
+    empty.innerHTML = `<span class="feed-empty-title">Connecting ✦</span>
+      <span class="feed-empty-sub">Finding your match...</span>`;
+    feed.appendChild(empty);
+    document.getElementById("match-bar-fill").style.width = "0%";
+    document.getElementById("match-label").textContent = "matching...";
+    document.getElementById("chat-input").disabled = true;
+    document.getElementById("send-btn").disabled = true;
+    document.getElementById("chat-input").value = "";
+  }
+
+  function goHome() {
+    searchCancelled = true;
+    clearInterval(dotsInterval);
+    dotsInterval = null;
+    document.getElementById("start-btn").style.display = "block";
+    document.getElementById("searching-state").style.display = "none";
+    validateStart();
+    showScreen("home");
+  }
+
+  // ── PROMPT BUILDERS ─────────────────────────────────────
+  function buildSystemPrompt() {
+    const langNote = language === "tag"
+      ? "Respond ONLY in Filipino/Tagalog (mix with some English anime terms is fine, like a real Filipino anime fan would talk — casual, warm, expressive)."
+      : "Respond in casual English, the way anime fans actually text — relaxed, expressive, no formal language.";
+
+    return `You are roleplaying as a real anonymous anime fan on a random chat site called anitwt. You are NOT an AI — you are a human. Never break character or admit you're an AI, even if asked directly. If asked if you're a bot, deflect naturally the way a human would ("lol why would I be a bot").
+
+${langNote}
+
+User profile:
+- Age: ${userAge}
+- Their anime: ${userAnime.join(", ")}
+- Gender: ${gender}
+- Looking for: ${pref}
+
+Your character rules:
+- You have your own genuine personality: a passionate anime fan who has strong opinions, favorite moments, shipping preferences, and random hot takes
+- Keep messages short-to-medium (1–4 sentences). No walls of text
+- Show real enthusiasm for anime — use natural reactions like "omg", "bro", "literally", "no but fr", etc.
+- Ask follow-up questions to keep the convo going
+- You have watched many anime series including some from the user's list
+- Never be preachy, never lecture, just vibe
+- React to what the user says specifically, don't give generic responses
+- Occasional typos or casual abbreviations are fine (lol, ngl, tbh, fr, rn)
+- You are chatting anonymously so you don't share personal details beyond general stuff`;
+  }
+
+  function buildIntroPrompt() {
+    const animeList = userAnime.join(", ");
+
+    return `This is your FIRST message to the user. They watch: ${animeList}.
+
+You must respond with ONLY a valid JSON object (no markdown, no backticks) in this exact format:
+{
+  "match_pct": <number 0-100 representing how much anime you share>,
+  "stranger_anime": [<2-4 anime titles you "also watch", picked from or related to their list>],
+  "message": "<your opening message as the stranger — be natural, reference something specific from their anime list, ask something. 1-3 sentences max.>"
+}
+
+Be genuine and pick 1-2 things from their anime list to react to. The opening should feel like a real person saying hi.`;
+  }
+
+  // ── CLAUDE API CALL ─────────────────────────────────────
+  async function callClaude(system, history, userOverride, isIntro) {
+    const messages = isIntro
+      ? [{ role: "user", content: userOverride }]
+      : history;
+
+    try {
+      const res = await fetch("https://api.anthropic.com/v1/messages", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          model: "claude-sonnet-4-20250514",
+          max_tokens: 400,
+          system,
+          messages,
+        }),
       });
+
+      const data = await res.json();
+      if (!data.content || !data.content[0]) return null;
+      return data.content.map(b => b.type === "text" ? b.text : "").filter(Boolean).join("\n").trim();
+    } catch(err) {
+      console.error("API error:", err);
+      return language === "tag"
+        ? "Ay sorry, di ako makatugon ngayon. Try mo ulit?"
+        : "Sorry, something went wrong. Try again?";
     }
-    setupToggleGroup("gender-group", v => gender = v);
-    setupToggleGroup("pref-group",   v => pref   = v);
+  }
 
-    // ── form validation ──
-    document.getElementById("age-input").addEventListener("input", e => {
-      e.target.value = e.target.value.replace(/\D/g, "");
-      validateStart();
-    });
-    document.getElementById("anime-input").addEventListener("input", validateStart);
-
-    // ── start ──
-    document.getElementById("start-btn").addEventListener("click", () => {
-      const age   = document.getElementById("age-input").value.trim();
-      const anime = document.getElementById("anime-input").value.trim();
-      if (!age || !anime) return;
-
-      document.getElementById("start-btn").style.display = "none";
-      document.getElementById("searching-state").style.display = "flex";
-
-      dotsCount = 0;
-      dotsInterval = setInterval(() => {
-        dotsCount = (dotsCount + 1) % 4;
-        document.getElementById("searching-label").textContent = "searching" + ".".repeat(dotsCount);
-      }, 450);
-
-      socket.emit("start", {
-        interests: anime.toLowerCase().split(",").map(s => s.trim()).filter(Boolean),
-        age: Number(age),
-        language, gender, pref,
-      });
-    });
-
-    // ── cancel ──
-    document.getElementById("cancel-btn").addEventListener("click", () => {
-      socket.emit("cancel");
-      clearInterval(dotsInterval);
-      document.getElementById("start-btn").style.display = "block";
-      document.getElementById("searching-state").style.display = "none";
-    });
-
-    // ── matched ──
-    socket.on("matched", (data) => {
-      clearInterval(dotsInterval);
-      isDisconnected = false;
-      const pct = data.percent ?? 0;
-
-      document.getElementById("match-bar-fill").style.width = pct + "%";
-      document.getElementById("match-label").textContent = pct + "% anime match";
-      document.getElementById("feed-empty-sub").textContent =
-        "You share " + pct + "% anime taste — break the ice!";
-
-      // reset feed
-      const feed = document.getElementById("feed");
-      feed.innerHTML = "";
-      const empty = document.createElement("div");
-      empty.className = "feed-empty"; empty.id = "feed-empty";
-      empty.innerHTML = `<span class="feed-empty-title">Connected ✦</span>
-        <span class="feed-empty-sub">You share ${pct}% anime taste — break the ice!</span>`;
-      feed.appendChild(empty);
-
-      typingEl = null;
-      document.getElementById("chat-input").disabled = false;
-      document.getElementById("send-btn").disabled   = true;
-      document.getElementById("chat-input").value    = "";
-
-      showScreen("chat");
-    });
-
-    // ── receive message ──
-    socket.on("message", msg => addMessage(msg, "stranger"));
-
-    // ── typing indicator ──
-    socket.on("typing", () => {
-      showTyping();
-      clearTimeout(typingTimer);
-      typingTimer = setTimeout(hideTyping, 1400);
-    });
-
-    // ── partner disconnected ──
-    socket.on("end", () => {
-      isDisconnected = true;
-      document.getElementById("chat-input").disabled = true;
-      document.getElementById("send-btn").disabled   = true;
-      hideTyping();
-      const notice = document.createElement("div");
-      notice.className = "disconnect-notice";
-      notice.textContent = "— stranger disconnected — returning to home —";
-      document.getElementById("feed").appendChild(notice);
-      document.getElementById("feed").scrollTop = 99999;
-      setTimeout(goHome, 3000);
-    });
-
-    // ── send ──
-    function sendMessage() {
-      const input = document.getElementById("chat-input");
-      const text  = input.value.trim();
-      if (!text || isDisconnected) return;
-      addMessage(text, "me");
-      socket.emit("message", text);
-      socket.emit("typing");
-      input.value = "";
-      document.getElementById("send-btn").disabled = true;
-    }
-
-    document.getElementById("send-btn").addEventListener("click", sendMessage);
-    document.getElementById("chat-input").addEventListener("keydown", e => {
-      if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); sendMessage(); }
-    });
-    document.getElementById("chat-input").addEventListener("input", e => {
-      document.getElementById("send-btn").disabled = !e.target.value.trim() || isDisconnected;
-    });
-
-    // ── end chat button ──
-    document.getElementById("end-btn").addEventListener("click", () => {
-      socket.emit("end");
-      goHome();
-    });
-
-    // ── go home ──
-    function goHome() {
-      isDisconnected = false;
-      clearInterval(dotsInterval);
-      document.getElementById("start-btn").style.display = "block";
-      document.getElementById("searching-state").style.display = "none";
-      validateStart();
-      showScreen("home");
-    }
-
-    // ── add message ──
-    function addMessage(text, sender) {
-      const feed  = document.getElementById("feed");
-      const empty = document.getElementById("feed-empty");
-      if (empty) empty.remove();
-      hideTyping();
-
-      const row = document.createElement("div");
-      row.className = "msg-row" + (sender === "me" ? " me" : "");
-
-      const avatar = document.createElement("div");
-      avatar.className = "avatar";
-      avatar.textContent = sender === "me" ? "me" : "?";
-
-      const col = document.createElement("div");
-      col.className = "bubble-col";
-
-      const bubble = document.createElement("div");
-      bubble.className = "bubble " + sender;
-      bubble.textContent = text;
-
-      const ts = document.createElement("span");
-      ts.className = "ts";
-      ts.textContent = now();
-
-      col.appendChild(bubble);
-      col.appendChild(ts);
-      row.appendChild(avatar);
-      row.appendChild(col);
-      feed.appendChild(row);
-      feed.scrollTop = feed.scrollHeight;
-    }
-
-    // ── typing indicator ──
-    function showTyping() {
-      if (typingEl) return;
-      const feed  = document.getElementById("feed");
-      const empty = document.getElementById("feed-empty");
-      if (empty) empty.remove();
-
-      typingEl = document.createElement("div");
-      typingEl.className = "msg-row";
-
-      const avatar = document.createElement("div");
-      avatar.className = "avatar";
-      avatar.textContent = "?";
-
-      const bubble = document.createElement("div");
-      bubble.className = "bubble stranger typing-bubble";
-      bubble.innerHTML = '<span class="dot"></span><span class="dot"></span><span class="dot"></span>';
-
-      typingEl.appendChild(avatar);
-      typingEl.appendChild(bubble);
-      feed.appendChild(typingEl);
-      feed.scrollTop = feed.scrollHeight;
-    }
-
-    function hideTyping() {
-      if (typingEl) { typingEl.remove(); typingEl = null; }
-    }
-  </script>
+  // ── utils ───────────────────────────────────────────────
+  function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
+</script>
 </body>
 </html>
